@@ -1,0 +1,20 @@
+[package]
+name = "ocel-core"
+description = "OCEL 2.0 data model and I/O library"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+rusqlite = { version = "0.32", features = ["bundled"] }
+quick-xml = { version = "0.37", features = ["serialize"] }
+petgraph = "0.7"
+indexmap = { version = "2", features = ["serde"] }
+
+[lints]
+workspace = true

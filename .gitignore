@@ -1,0 +1,24 @@
+# Rust
+/target/
+
+# Python (PyO3/maturin)
+__pycache__/
+*.egg-info/
+dist/
+.venv/
+*.so
+*.pyd
+
+# WASM
+pkg/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Environment
+.env

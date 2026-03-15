@@ -1,0 +1,17 @@
+[package]
+name = "ocel-cli"
+description = "CLI tool for OCEL 2.0 processing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+ocel-core = { path = "../ocel-core", version = "0.1.0" }
+ocel-etl = { path = "../ocel-etl", version = "0.1.0" }
+clap = { version = "4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+[lints]
+workspace = true

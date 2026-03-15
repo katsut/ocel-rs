@@ -1,0 +1,15 @@
+[package]
+name = "ocel-etl"
+description = "ETL pipeline for OCEL 2.0 event logs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+ocel-core = { path = "../ocel-core", version = "0.1.0" }
+serde.workspace = true
+csv = "1"
+
+[lints]
+workspace = true
