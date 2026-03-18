@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/ocel-core", "crates/ocel-etl", "crates/ocel-cli"]
+members = ["crates/ocel-core", "crates/ocel-cli"]
 
 [workspace.package]
 version = "0.1.0"
