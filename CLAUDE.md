@@ -40,11 +40,22 @@ crates/
 
 ## ドキュメント
 
-- `docs/research-notes.md` - リサーチノート（OCEL 2.0 仕様詳細、マッピングパターン含む）
-- `docs/research-etl-architecture-2026-03-16.md` - ETL アーキテクチャリサーチレポート
+- `docs/development-guide.md` - 開発ガイド（TDD、コード品質、コミット規約）
+- `docs/research-notes.md` - リサーチノート（OCEL 2.0 仕様詳細、テストデータ戦略含む）
+- `docs/ocel2-comprehensive-research.md` - OCEL 2.0 包括的リサーチ（背景、歴史、産業動向）
+- `docs/research-etl-architecture-2026-03-16.md` - ETL アーキテクチャリサーチ
+- `docs/product-brief-ocel-workspace-2026-03-18.md` - ワークスペースプロダクトブリーフ
+
+## 開発規約
+
+`docs/development-guide.md` を参照。要点:
+
+- TDD（テスト駆動開発）
+- `cargo nextest run` / `cargo clippy -- -D warnings` / `cargo fmt --check` / `cargo deny check` を全て通過させる
+- conventional commits（英語）
 
 ## 次のアクション
 
-1. プロダクトブリーフ作成
+1. プロダクトブリーフ完成
 2. PRD 作成
 3. アーキテクチャ設計
