@@ -9,6 +9,7 @@ pub mod io;
 pub mod model;
 
 pub use error::OcelError;
+pub use io::IoError;
 pub use model::{
     AttrType, AttrValue, AttributeDefinition, E2ORelation, Event, EventAttribute, EventColumns,
     EventType, O2ORelation, Object, ObjectAttribute, ObjectType, Ocel, OcelBuilder, Relationship,
