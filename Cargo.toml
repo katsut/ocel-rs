@@ -25,3 +25,16 @@ pedantic = { level = "warn", priority = -1 }
 module_name_repetitions = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
+
+[profile.dev]
+opt-level = 0
+debug = "line-tables-only"  # フルdebuginfo不要 → ディスク節約 & リンク高速化
+
+[profile.dev.package."*"]
+opt-level = 1  # 依存クレートだけ軽く最適化（実行速度UP、ビルド差はわずか）
+
+[profile.release]
+opt-level = 3
+lto = "thin"  # thin LTO: fat LTOより高速、十分なサイズ削減
+strip = true  # デバッグシンボル除去（バイナリサイズ削減）
+# codegen-units = 1 は最終リリースビルドのみ（CI で指定）
