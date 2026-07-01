@@ -1,0 +1,17 @@
+{
+  "eventTypes": [{ "name": "noop", "attributes": [] }],
+  "objectTypes": [{ "name": "thing", "attributes": [] }],
+  "events": [
+    {
+      "id": "e1",
+      "type": "noop",
+      "time": "2023-01-01T00:00:00Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "t1", "qualifier": "rel" },
+        { "objectId": "t1", "qualifier": "rel" }
+      ]
+    }
+  ],
+  "objects": [{ "id": "t1", "type": "thing", "attributes": [], "relationships": [] }]
+}

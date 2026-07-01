@@ -1,0 +1,89 @@
+{
+  "eventTypes": [
+    { "name": "place order", "attributes": [{ "name": "channel", "type": "string" }] },
+    { "name": "confirm order", "attributes": [] },
+    { "name": "pay order", "attributes": [{ "name": "amount", "type": "float" }] }
+  ],
+  "objectTypes": [
+    {
+      "name": "order",
+      "attributes": [
+        { "name": "priority", "type": "string" },
+        { "name": "total", "type": "float" }
+      ]
+    },
+    { "name": "customer", "attributes": [{ "name": "name", "type": "string" }] },
+    { "name": "item", "attributes": [{ "name": "sku", "type": "string" }] }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "type": "place order",
+      "time": "2023-01-01T09:00:00Z",
+      "attributes": [{ "name": "channel", "value": "web" }],
+      "relationships": [
+        { "objectId": "o1", "qualifier": "order" },
+        { "objectId": "c1", "qualifier": "placed by" },
+        { "objectId": "i1", "qualifier": "item" },
+        { "objectId": "i2", "qualifier": "item" }
+      ]
+    },
+    {
+      "id": "e2",
+      "type": "confirm order",
+      "time": "2023-01-02T10:00:00Z",
+      "attributes": [],
+      "relationships": [{ "objectId": "o1", "qualifier": "order" }]
+    },
+    {
+      "id": "e3",
+      "type": "pay order",
+      "time": "2023-01-03T14:30:00Z",
+      "attributes": [{ "name": "amount", "value": 120.0 }],
+      "relationships": [
+        { "objectId": "o1", "qualifier": "order" },
+        { "objectId": "c1", "qualifier": "payer" }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "c1",
+      "type": "customer",
+      "attributes": [{ "name": "name", "value": "Alice", "time": "1970-01-01T00:00:00Z" }],
+      "relationships": []
+    },
+    {
+      "id": "c2",
+      "type": "customer",
+      "attributes": [{ "name": "name", "value": "Bob", "time": "1970-01-01T00:00:00Z" }],
+      "relationships": []
+    },
+    {
+      "id": "o1",
+      "type": "order",
+      "attributes": [
+        { "name": "priority", "value": "normal", "time": "1970-01-01T00:00:00Z" },
+        { "name": "total", "value": 100.0, "time": "1970-01-01T00:00:00Z" },
+        { "name": "total", "value": 120.0, "time": "2023-01-02T10:00:00Z" }
+      ],
+      "relationships": [
+        { "objectId": "c1", "qualifier": "placed by" },
+        { "objectId": "i1", "qualifier": "contains" },
+        { "objectId": "i2", "qualifier": "contains" }
+      ]
+    },
+    {
+      "id": "i1",
+      "type": "item",
+      "attributes": [{ "name": "sku", "value": "SKU-1", "time": "1970-01-01T00:00:00Z" }],
+      "relationships": []
+    },
+    {
+      "id": "i2",
+      "type": "item",
+      "attributes": [{ "name": "sku", "value": "SKU-2", "time": "1970-01-01T00:00:00Z" }],
+      "relationships": []
+    }
+  ]
+}
