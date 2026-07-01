@@ -2,6 +2,7 @@
 
 pub mod json;
 pub mod sqlite;
+pub mod xml;
 
 use thiserror::Error;
 
@@ -13,6 +14,9 @@ pub enum IoError {
 
     #[error("sqlite error: {0}")]
     Sqlite(#[from] rusqlite::Error),
+
+    #[error("xml error: {0}")]
+    Xml(String),
 
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
