@@ -134,7 +134,10 @@ fn official_path() -> PathBuf {
 fn official_sqlite_round_trips_if_present() {
     let path = official_path();
     if !path.exists() {
-        eprintln!("skipping: official fixture not present ({})", path.display());
+        eprintln!(
+            "skipping: official fixture not present ({})",
+            path.display()
+        );
         return;
     }
     let a = sqlite::read_path(&path).unwrap();
@@ -146,7 +149,12 @@ fn official_sqlite_round_trips_if_present() {
     // known dynamic change: PO1 po_quantity 500 -> 600
     let po1 = a.objects.iter().find(|o| o.id == "PO1").unwrap();
     assert_eq!(
-        po1.attribute_at("po_quantity", DateTime::parse_from_rfc3339("2022-06-01T00:00:00Z").unwrap().to_utc()),
+        po1.attribute_at(
+            "po_quantity",
+            DateTime::parse_from_rfc3339("2022-06-01T00:00:00Z")
+                .unwrap()
+                .to_utc()
+        ),
         Some(&AttrValue::String("600".into()))
     );
 

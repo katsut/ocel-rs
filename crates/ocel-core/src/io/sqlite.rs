@@ -152,7 +152,9 @@ fn read_type_map(conn: &Connection, table: &str) -> Result<Vec<(String, String)>
         quote_ident(table)
     ))?;
     let rows = stmt
-        .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })?
         .collect::<Result<Vec<_>, _>>()?;
     Ok(rows)
 }
@@ -266,7 +268,13 @@ fn attach_e2o(conn: &Connection, events: &mut [Event]) -> Result<(), IoError> {
         let object_id: String = row.get(1)?;
         let qualifier: String = row.get(2)?;
         if let Some(&i) = index.get(event_id.as_str()) {
-            positions.push((i, Relationship { object_id, qualifier }));
+            positions.push((
+                i,
+                Relationship {
+                    object_id,
+                    qualifier,
+                },
+            ));
         }
     }
     for (i, rel) in positions {
@@ -292,7 +300,13 @@ fn attach_o2o(conn: &Connection, objects: &mut [Object]) -> Result<(), IoError> 
         let object_id: String = row.get(1)?;
         let qualifier: String = row.get(2)?;
         if let Some(&i) = index.get(source_id.as_str()) {
-            positions.push((i, Relationship { object_id, qualifier }));
+            positions.push((
+                i,
+                Relationship {
+                    object_id,
+                    qualifier,
+                },
+            ));
         }
     }
     for (i, rel) in positions {
@@ -519,7 +533,10 @@ fn write_objects(
 
 fn object_row_values(object: &Object, attr_cols: &[&str], has_changed: bool) -> Vec<Vec<Value>> {
     if object.attributes.is_empty() {
-        let mut row = vec![Value::Text(object.id.clone()), Value::Text(format_time(epoch()))];
+        let mut row = vec![
+            Value::Text(object.id.clone()),
+            Value::Text(format_time(epoch())),
+        ];
         if has_changed {
             row.push(Value::Null);
         }
