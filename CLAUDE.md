@@ -4,8 +4,9 @@ OCEL 2.0 データモデル・I/O・グラフライブラリ (Rust)。
 
 ## プロジェクト状態
 
-- フェーズ: リサーチ完了 → プロダクトブリーフ作成中
-- BMAD ワークフロー: ~~リサーチ~~ → プロダクトブリーフ → PRD → アーキテクチャ → 実装
+- フェーズ: spec / architecture 確定 → v0.1 実装着手
+- North Star: OSS 実用性（crates.io で使われる OCEL 2.0 ネイティブ Rust ライブラリ）
+- 計画・ADR・ロードマップは workspace リポジトリ（`ocel-workspace/docs/`）が正
 
 ## スコープ
 
@@ -40,11 +41,14 @@ crates/
 
 ## ドキュメント
 
+このリポジトリは **spec と architecture のみ**を持つ（計画・研究・ADR・ロードマップは workspace が正）。
+
 - `docs/development-guide.md` - 開発ガイド（TDD、コード品質、コミット規約）
-- `docs/research-notes.md` - リサーチノート（OCEL 2.0 仕様詳細、テストデータ戦略含む）
-- `docs/ocel2-comprehensive-research.md` - OCEL 2.0 包括的リサーチ（背景、歴史、産業動向）
-- `docs/research-etl-architecture-2026-03-16.md` - ETL アーキテクチャリサーチ
-- `docs/product-brief-ocel-workspace-2026-03-18.md` - ワークスペースプロダクトブリーフ
+- `docs/architecture.md` - v0.1 アーキテクチャ（クレート/モジュール構成、モデル、API 制約）
+- `docs/spec-v0.1.md` - v0.1 仕様（スコープ、I/O、バリデーション、受け入れ基準）
+
+計画・研究・意思決定は workspace リポジトリを参照:
+- `ocel-workspace/docs/roadmap.md`, `ocel-workspace/docs/adr/`, product-brief, research-notes ほか
 
 ## 開発規約
 
@@ -56,6 +60,4 @@ crates/
 
 ## 次のアクション
 
-1. プロダクトブリーフ完成
-2. PRD 作成
-3. アーキテクチャ設計
+v0.1（core の read/write/validate）の実装。詳細は `docs/spec-v0.1.md` と GitHub Issues を参照。
