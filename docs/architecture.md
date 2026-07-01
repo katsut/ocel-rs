@@ -42,26 +42,26 @@ ocel-core/src/
 pub struct Ocel {
     pub event_types:  Vec<EventType>,
     pub object_types: Vec<ObjectType>,
-    pub events:       Vec<Event>,   // 参照は解決済み
-    pub objects:      Vec<Object>,  // 動的属性の時系列が揃っている
-    pub e2o:          Vec<E2O>,     // 宙吊り参照なし
-    pub o2o:          Vec<O2O>,
+    pub events:       Vec<Event>,   // 各 Event が E2O relationships を内包
+    pub objects:      Vec<Object>,  // 各 Object が動的属性 + O2O relationships を内包
 }
 ```
+
+関係（E2O / O2O）は OCEL 2.0 JSON と同様に `Event` / `Object` に埋め込む。フラットな関係ビューは `Ocel::e2o()` / `Ocel::o2o()` アクセサが提供し、SQLite の `event_object` / `object_object` テーブルや列出力（Arrow / PyO3）はこのビューを使う。
 
 **設計上のキモ（ADR 0001）:**
 
 - **属性値の型:** `enum AttrValue { String, Integer, Float, Boolean, Time }`。JSON は全て文字列で来るため read 時に型変換、SQLite は型付き。詳細は [spec-v0.1.md](spec-v0.1.md)。
-- **動的オブジェクト属性:** `oaval(o, oa, t)`（時間付き部分関数）を `BTreeMap<Timestamp, AttrValue>` で表現し、forward-fill で任意時点の値を復元。初期値はエポック `1970-01-01T00:00:00Z`、変更行に `ocel_changed_field` 相当を保持。
-- **provenance:** イベント/オブジェクト属性として出自（`rule` / `llm` 等）を保持できる余白を残す。
+- **動的オブジェクト属性:** タイムスタンプ付きの値リスト（`Vec<ObjectAttribute>`）として保持し、`Object::attribute_at(name, t)` が forward-fill で任意時点の値を復元する。初期値はエポック `1970-01-01T00:00:00Z`。SQLite の `ocel_changed_field` は I/O 層で扱う。
+- **provenance:** 出自（`rule` / `llm` 等）は通常の属性（name/value）として保持できるため、モデルに追加フィールドは不要。
 
 ## 「塞がない」ための API 制約
 
 将来（v0.2 の PyO3 / Arrow、大規模ストリーミング）を阻害しないため、core は以下を必ず提供する:
 
 - **`OcelBuilder`（fallible）:** 完成グラフを一括で要求せず、部品から積み上げて最後に `build() -> Result<Ocel, _>` で検証。ETL が `StagingLog` からゲートを通す経路にも使える。
-- **イテレータ API:** 全件を `Vec` で抱える以外に、イベント/関係を逐次走査できる。
-- **列アクセサ:** `events_columns()` / `relations_columns()` 等、列指向で取り出せる。これがあれば Arrow `RecordBatch` / Polars `DataFrame` / PyO3 が薄いラッパで載る。
+- **イテレータ API:** 全件を `Vec` で抱える以外に、関係を逐次走査できる（`e2o()` / `o2o()` がフラットな関係を返す）。
+- **列アクセサ:** `event_columns()` 等、列指向で取り出せる。これがあれば Arrow `RecordBatch` / Polars `DataFrame` / PyO3 が薄いラッパで載る。
 
 ## I/O 設計
 

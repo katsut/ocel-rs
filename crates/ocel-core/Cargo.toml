@@ -16,5 +16,9 @@ quick-xml = { version = "0.37", features = ["serialize"] }
 petgraph = "0.7"
 indexmap = { version = "2", features = ["serde"] }
 
+[dev-dependencies]
+chrono.workspace = true
+serde_json.workspace = true
+
 [lints]
 workspace = true
