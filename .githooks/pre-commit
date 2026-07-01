@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# Auto-format staged Rust files with rustfmt before committing.
+# Enable once per clone: git config core.hooksPath .githooks
+set -eu
+
+# Nothing to do if no Rust files are staged.
+if git diff --cached --quiet --diff-filter=ACM -- '*.rs'; then
+    exit 0
+fi
+
+cargo fmt
+
+# Re-stage the (now formatted) files that were already staged.
+git diff --cached --name-only --diff-filter=ACM -z -- '*.rs' | xargs -0 git add --
