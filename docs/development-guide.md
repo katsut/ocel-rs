@@ -56,6 +56,16 @@ cargo nextest run          # テスト
 cargo deny check           # ライセンス・脆弱性
 ```
 
+## Git フック（フォーマット自動化）
+
+`cargo fmt` の手動実行を不要にするため、pre-commit フックを用意している。**クローン後に一度だけ有効化**する:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+以降、コミット時にステージ済みの `.rs` が自動的に整形・再ステージされる（CI の Format 落ちを防ぐ）。
+
 ## Clippy 設定
 
 `Cargo.toml` の `[workspace.lints]` で管理（clippy pedantic 有効）。
