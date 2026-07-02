@@ -17,8 +17,6 @@ chrono.workspace = true
 thiserror.workspace = true
 rusqlite = { version = "0.32", features = ["bundled"] }
 quick-xml = { version = "0.37", features = ["serialize"] }
-petgraph = "0.7"
-indexmap = { version = "2", features = ["serde"] }
 
 [dev-dependencies]
 chrono.workspace = true
