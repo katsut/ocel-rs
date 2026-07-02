@@ -1,11 +1,18 @@
-# ocel-rs
+# ocel
+
+[![crates.io](https://img.shields.io/crates/v/ocel.svg)](https://crates.io/crates/ocel)
+[![docs.rs](https://img.shields.io/docsrs/ocel)](https://docs.rs/ocel)
+[![license](https://img.shields.io/crates/l/ocel.svg)](LICENSE)
 
 An [OCEL 2.0](https://www.ocel-standard.org/) toolkit for Rust and Python —
 read, write, convert, validate, filter, and sample object-centric event logs.
+Verified against the official PM4Py example and the 21K-event Zenodo
+Order Management log.
 
-> 🚧 **Unreleased.** The v0.1 core and Python bindings are feature-complete and
-> verified against the official PM4Py example and the 21K-event Zenodo
-> Order Management log; the API may still change before the first release.
+```sh
+cargo add ocel            # library
+cargo install ocel-cli    # `ocel` command-line tool
+```
 
 ## Features
 
@@ -22,7 +29,7 @@ read, write, convert, validate, filter, and sample object-centric event logs.
 - **`ocel` CLI** — convert and validate from the command line
 - **Python bindings** — the `ocel` module with columnar exports that feed
   straight into Polars/pandas
-- **MIT licensed** — note that PM4Py is AGPL-3.0; ocel-rs is a permissive
+- **MIT licensed** — note that PM4Py is AGPL-3.0; ocel is a permissive
   alternative for the OCEL 2.0 I/O + preprocessing layer
 
 ## Performance
@@ -68,6 +75,24 @@ the DataFrame cost entirely and runs at the Rust-native speeds above.
 
 Reproduce with [`scripts/bench-pm4py-compare.py`](scripts/bench-pm4py-compare.py).
 
+## Quickstart (Rust)
+
+```rust
+use ocel::io::{json, sqlite};
+
+// Read an OCEL 2.0 JSON log and write it out as SQLite.
+let ocel = json::read_path("log.jsonocel")?;
+sqlite::write_path(&ocel, "log.sqlite")?;
+
+// Validate, filter, sample.
+ocel.validate().map_err(|v| format!("{v:?}"))?;
+let sub = ocel.filter_event_types(&["place order"]);
+let sample = ocel.sample_components(10);
+```
+
+See [`crates/ocel/examples/roundtrip.rs`](crates/ocel/examples/roundtrip.rs)
+for a runnable example (`cargo run -p ocel --example roundtrip`).
+
 ## Quickstart (Python)
 
 ```sh
@@ -90,25 +115,10 @@ sample = log.sample_components(10)             # connected-components sampling
 sample.write_json("sample.json")
 ```
 
-## Quickstart (Rust)
+## CLI
 
-```rust
-use ocel::io::{json, sqlite};
-
-// Read an OCEL 2.0 JSON log and write it out as SQLite.
-let ocel = json::read_path("log.jsonocel")?;
-sqlite::write_path(&ocel, "log.sqlite")?;
-
-// Validate, filter, sample.
-ocel.validate().map_err(|v| format!("{v:?}"))?;
-let sub = ocel.filter_event_types(&["place order"]);
-let sample = ocel.sample_components(10);
-```
-
-See [`crates/ocel/examples/roundtrip.rs`](crates/ocel/examples/roundtrip.rs)
-for a runnable example (`cargo run -p ocel --example roundtrip`).
-
-## Quickstart (CLI)
+`ocel validate` doubles as a standalone OCEL 2.0 conformance checker — handy in
+CI for any tool that produces OCEL exports:
 
 ```sh
 ocel convert log.jsonocel log.sqlite   # format by file extension
@@ -119,7 +129,7 @@ ocel validate log.sqlite               # non-zero exit on violations
 
 ```
 crates/
-├── ocel/    # data model + I/O + validation + graph/filter/sampling
+├── ocel/         # data model + I/O + validation + graph/filter/sampling
 ├── ocel-cli/     # `ocel` command-line tool
 └── ocel-py/      # Python bindings (module name: ocel)
 ```
