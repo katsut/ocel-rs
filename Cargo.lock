@@ -301,7 +301,7 @@ dependencies = [
 
 [[package]]
 name = "ocel"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "quick-xml",
@@ -313,7 +313,7 @@ dependencies = [
 
 [[package]]
 name = "ocel-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "ocel",
@@ -321,7 +321,7 @@ dependencies = [
 
 [[package]]
 name = "ocel-py"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "ocel",
