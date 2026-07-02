@@ -463,35 +463,33 @@ fn object_type_has_changes(ocel: &Ocel, type_name: &str) -> bool {
 }
 
 fn write_base_rows(conn: &Connection, ocel: &Ocel) -> Result<(), IoError> {
+    let mut insert_event =
+        conn.prepare("INSERT INTO \"event\" (\"ocel_id\", \"ocel_type\") VALUES (?, ?)")?;
     for e in &ocel.events {
-        conn.execute(
-            "INSERT INTO \"event\" (\"ocel_id\", \"ocel_type\") VALUES (?, ?)",
-            (&e.id, &e.event_type),
-        )?;
+        insert_event.execute((&e.id, &e.event_type))?;
     }
+    let mut insert_object =
+        conn.prepare("INSERT INTO \"object\" (\"ocel_id\", \"ocel_type\") VALUES (?, ?)")?;
     for o in &ocel.objects {
-        conn.execute(
-            "INSERT INTO \"object\" (\"ocel_id\", \"ocel_type\") VALUES (?, ?)",
-            (&o.id, &o.object_type),
-        )?;
+        insert_object.execute((&o.id, &o.object_type))?;
     }
     Ok(())
 }
 
 fn write_relations(conn: &Connection, ocel: &Ocel) -> Result<(), IoError> {
+    let mut insert_event_object = conn.prepare(
+        "INSERT OR IGNORE INTO \"event_object\" \
+         (\"ocel_event_id\", \"ocel_object_id\", \"ocel_qualifier\") VALUES (?, ?, ?)",
+    )?;
     for r in ocel.e2o() {
-        conn.execute(
-            "INSERT OR IGNORE INTO \"event_object\" \
-             (\"ocel_event_id\", \"ocel_object_id\", \"ocel_qualifier\") VALUES (?, ?, ?)",
-            (r.event_id, r.object_id, r.qualifier),
-        )?;
+        insert_event_object.execute((r.event_id, r.object_id, r.qualifier))?;
     }
+    let mut insert_object_object = conn.prepare(
+        "INSERT OR IGNORE INTO \"object_object\" \
+         (\"ocel_source_id\", \"ocel_target_id\", \"ocel_qualifier\") VALUES (?, ?, ?)",
+    )?;
     for r in ocel.o2o() {
-        conn.execute(
-            "INSERT OR IGNORE INTO \"object_object\" \
-             (\"ocel_source_id\", \"ocel_target_id\", \"ocel_qualifier\") VALUES (?, ?, ?)",
-            (r.source_id, r.target_id, r.qualifier),
-        )?;
+        insert_object_object.execute((r.source_id, r.target_id, r.qualifier))?;
     }
     Ok(())
 }
