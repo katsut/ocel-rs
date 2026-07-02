@@ -28,3 +28,30 @@ pub enum AttrValue {
     Time(DateTime<Utc>),
     String(String),
 }
+
+impl AttrValue {
+    /// The [`AttrType`] of this value.
+    #[must_use]
+    pub fn attr_type(&self) -> AttrType {
+        match self {
+            AttrValue::String(_) => AttrType::String,
+            AttrValue::Integer(_) => AttrType::Integer,
+            AttrValue::Float(_) => AttrType::Float,
+            AttrValue::Boolean(_) => AttrType::Boolean,
+            AttrValue::Time(_) => AttrType::Time,
+        }
+    }
+
+    /// The canonical text form used by the text-based formats
+    /// (times as RFC 3339).
+    #[must_use]
+    pub fn to_text(&self) -> String {
+        match self {
+            AttrValue::String(s) => s.clone(),
+            AttrValue::Integer(i) => i.to_string(),
+            AttrValue::Float(f) => f.to_string(),
+            AttrValue::Boolean(b) => b.to_string(),
+            AttrValue::Time(t) => t.to_rfc3339(),
+        }
+    }
+}

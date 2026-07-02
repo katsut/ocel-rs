@@ -10,7 +10,7 @@ use std::path::Path;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::io::coerce::{apply_declared_types, attr_to_text, parse_time_lenient};
+use crate::io::coerce::{apply_declared_types, parse_time_lenient};
 use crate::io::IoError;
 use crate::model::{
     AttrType, AttrValue, AttributeDefinition, Event, EventAttribute, EventType, Object,
@@ -315,7 +315,7 @@ fn from_model(ocel: &Ocel) -> XmlLog {
                         .map(|a| ObjectAttrX {
                             name: a.name.clone(),
                             time: a.time.to_rfc3339(),
-                            value: attr_to_text(&a.value),
+                            value: a.value.to_text(),
                         })
                         .collect(),
                 },
@@ -337,7 +337,7 @@ fn from_model(ocel: &Ocel) -> XmlLog {
                         .iter()
                         .map(|a| EventAttrX {
                             name: a.name.clone(),
-                            value: attr_to_text(&a.value),
+                            value: a.value.to_text(),
                         })
                         .collect(),
                 },
