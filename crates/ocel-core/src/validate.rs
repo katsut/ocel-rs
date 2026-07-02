@@ -39,9 +39,6 @@ pub enum Violation {
         source_id: String,
         target_id: String,
     },
-
-    #[error("attribute name {attribute} is declared in more than one type")]
-    AttributeNameCollision { attribute: String },
 }
 
 impl Ocel {
@@ -78,10 +75,11 @@ pub fn validate(ocel: &Ocel) -> Vec<Violation> {
         }
     }
 
+    // NOTE: the spec's formal definition implies attribute names are disjoint
+    // across types (Definition 2), but the official datasets (e.g. Zenodo Order
+    // Management) share names like "price" across types, so we do not enforce it.
     let event_type_attrs = type_attr_map(&ocel.event_types);
     let object_type_attrs = type_attr_map(&ocel.object_types);
-    check_attr_disjoint(&ocel.event_types, &mut violations);
-    check_attr_disjoint(&ocel.object_types, &mut violations);
 
     for event in &ocel.events {
         if let Some(declared) = event_type_attrs.get(event.event_type.as_str()) {
@@ -173,19 +171,4 @@ fn type_attr_map<T: TypeDecl>(types: &[T]) -> HashMap<&str, HashSet<&str>> {
             (t.type_name(), attrs)
         })
         .collect()
-}
-
-fn check_attr_disjoint<T: TypeDecl>(types: &[T], violations: &mut Vec<Violation>) {
-    let mut seen: HashSet<&str> = HashSet::new();
-    let mut reported: HashSet<&str> = HashSet::new();
-    for t in types {
-        for attr in t.declared_attributes() {
-            let name = attr.name.as_str();
-            if !seen.insert(name) && reported.insert(name) {
-                violations.push(Violation::AttributeNameCollision {
-                    attribute: name.to_owned(),
-                });
-            }
-        }
-    }
 }
