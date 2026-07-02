@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             qualifier: "order".into(),
         }],
     });
-    let ocel = builder.build()?;
+    let ocel = builder.build().map_err(|v| format!("{v:?}"))?;
 
     // Serialize to JSON.
     println!("{}", json::write_string(&ocel)?);

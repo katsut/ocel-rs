@@ -1,14 +1,17 @@
 use chrono::{TimeZone, Utc};
 use ocel_core::{
     AttrType, AttrValue, AttributeDefinition, Event, EventAttribute, EventType, Object,
-    ObjectAttribute, ObjectType, Ocel, OcelBuilder, OcelError, Relationship,
+    ObjectAttribute, ObjectType, Ocel, OcelBuilder, Relationship, Violation,
 };
 
 fn sample() -> Ocel {
     let mut b = OcelBuilder::new();
     b.add_event_type(EventType {
         name: "create order".into(),
-        attributes: vec![],
+        attributes: vec![AttributeDefinition {
+            name: "count".into(),
+            value_type: AttrType::Integer,
+        }],
     });
     b.add_object_type(ObjectType {
         name: "order".into(),
@@ -76,10 +79,10 @@ fn detects_dangling_e2o() {
     });
     assert_eq!(
         b.build().unwrap_err(),
-        OcelError::DanglingE2O {
+        vec![Violation::DanglingE2O {
             event: "e1".into(),
             object: "missing".into(),
-        }
+        }]
     );
 }
 
@@ -100,7 +103,7 @@ fn detects_duplicate_object_id() {
     b.add_object(make());
     assert_eq!(
         b.build().unwrap_err(),
-        OcelError::DuplicateObjectId("o1".into())
+        vec![Violation::DuplicateObjectId("o1".into())]
     );
 }
 
@@ -116,10 +119,10 @@ fn detects_undeclared_event_type() {
     });
     assert_eq!(
         b.build().unwrap_err(),
-        OcelError::UndeclaredEventType {
+        vec![Violation::UndeclaredEventType {
             event: "e1".into(),
             event_type: "ghost".into(),
-        }
+        }]
     );
 }
 

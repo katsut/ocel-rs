@@ -4,12 +4,10 @@
 //! representations live in downstream crates and convert into [`Ocel`] via the
 //! [`OcelBuilder`] gate.
 
-pub mod error;
 pub mod io;
 pub mod model;
 pub mod validate;
 
-pub use error::OcelError;
 pub use io::IoError;
 pub use model::{
     AttrType, AttrValue, AttributeDefinition, E2ORelation, Event, EventAttribute, EventColumns,
