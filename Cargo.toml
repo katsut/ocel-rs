@@ -28,13 +28,13 @@ missing_panics_doc = "allow"
 
 [profile.dev]
 opt-level = 0
-debug = "line-tables-only"  # フルdebuginfo不要 → ディスク節約 & リンク高速化
+debug = "line-tables-only" # full debuginfo not needed -> smaller disk, faster links
 
 [profile.dev.package."*"]
-opt-level = 1  # 依存クレートだけ軽く最適化（実行速度UP、ビルド差はわずか）
+opt-level = 1 # lightly optimize dependencies only (faster runs, negligible build cost)
 
 [profile.release]
 opt-level = 3
-lto = "thin"  # thin LTO: fat LTOより高速、十分なサイズ削減
-strip = true  # デバッグシンボル除去（バイナリサイズ削減）
-# codegen-units = 1 は最終リリースビルドのみ（CI で指定）
+lto = "thin" # thin LTO: much faster than fat LTO, most of the size win
+strip = true # drop debug symbols from release binaries
+# set codegen-units = 1 only for final release builds (in CI)
