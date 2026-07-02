@@ -1,7 +1,7 @@
-# Linux CI/本番環境では mold リンカーを使う（2-5x 高速）。
-# CI ワークフローで mold を導入済み。
+# Use the mold linker on Linux (2-5x faster links); CI installs mold.
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 
-# macOS はデフォルトリンカーで十分高速（target 指定のためローカルには影響しない）。
+# macOS: the default linker is fast enough (target-scoped, so local builds
+# on other platforms are unaffected).
