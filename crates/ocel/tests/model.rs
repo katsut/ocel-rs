@@ -1,5 +1,5 @@
 use chrono::{TimeZone, Utc};
-use ocel_core::{
+use ocel::{
     AttrType, AttrValue, AttributeDefinition, Event, EventAttribute, EventType, Object,
     ObjectAttribute, ObjectType, Ocel, OcelBuilder, Relationship, Violation,
 };

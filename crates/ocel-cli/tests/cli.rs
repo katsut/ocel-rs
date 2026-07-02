@@ -2,12 +2,12 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn bin() -> &'static str {
-    env!("CARGO_BIN_EXE_ocel-cli")
+    env!("CARGO_BIN_EXE_ocel")
 }
 
 fn fixture(name: &str) -> PathBuf {
     let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    p.push("../ocel-core/tests/fixtures");
+    p.push("../ocel/tests/fixtures");
     p.push(name);
     p
 }

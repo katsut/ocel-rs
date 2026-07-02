@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
-use ocel_core::io::{json, sqlite, xml};
-use ocel_core::{
+use ocel::io::{json, sqlite, xml};
+use ocel::{
     AttrType, AttributeDefinition, Event, EventType, ObjectType, Ocel, Relationship, Violation,
 };
 
@@ -69,9 +69,9 @@ fn detects_undeclared_attribute() {
             id: "e1".into(),
             event_type: "t".into(),
             time: ts(0),
-            attributes: vec![ocel_core::EventAttribute {
+            attributes: vec![ocel::EventAttribute {
                 name: "surprise".into(),
-                value: ocel_core::AttrValue::String("x".into()),
+                value: ocel::AttrValue::String("x".into()),
             }],
             relationships: vec![],
         }],

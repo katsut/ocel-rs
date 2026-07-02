@@ -4,8 +4,8 @@
 use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
-use ocel_core::io::{json, sqlite, xml};
-use ocel_core::{
+use ocel::io::{json, sqlite, xml};
+use ocel::{
     AttrType, AttrValue, AttributeDefinition, Event, EventAttribute, EventType, Object,
     ObjectAttribute, ObjectType, Ocel, Relationship,
 };

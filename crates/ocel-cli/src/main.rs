@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use ocel_core::io::{json, sqlite, xml};
-use ocel_core::Ocel;
+use ocel::io::{json, sqlite, xml};
+use ocel::Ocel;
 
 /// OCEL 2.0 command-line tools.
 #[derive(Debug, Parser)]

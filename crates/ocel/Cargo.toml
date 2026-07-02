@@ -1,11 +1,11 @@
 [package]
-name = "ocel-core"
+name = "ocel"
 description = "OCEL 2.0 data model, I/O (JSON/SQLite/XML), and validation library"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/ocel-core"
+documentation = "https://docs.rs/ocel"
 readme = "../../README.md"
 keywords = ["ocel", "process-mining", "event-log", "object-centric", "ocel2"]
 categories = ["data-structures", "parser-implementations"]

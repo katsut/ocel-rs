@@ -22,7 +22,7 @@ import ocel  # noqa: E402
 import pm4py  # noqa: E402
 import polars as pl  # noqa: E402
 
-FIXTURES = "crates/ocel-core/tests/fixtures/official"
+FIXTURES = "crates/ocel/tests/fixtures/official"
 SQLITE = f"{FIXTURES}/order-management.sqlite"
 TYPES = ["place order", "confirm order", "pay order"]
 RUNS = 7
