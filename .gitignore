@@ -1,0 +1,27 @@
+# Rust
+/target/
+
+# Python (PyO3/maturin)
+__pycache__/
+*.egg-info/
+dist/
+.venv/
+*.so
+*.pyd
+
+# WASM
+pkg/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Environment
+.env
+
+# Downloaded (non-committed) official test fixtures
+crates/ocel-core/tests/fixtures/official/

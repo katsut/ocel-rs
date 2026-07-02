@@ -1,0 +1,18 @@
+[package]
+name = "ocel-cli"
+description = "Command-line tool to convert and validate OCEL 2.0 event logs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+documentation = "https://docs.rs/ocel-cli"
+readme = "../../README.md"
+keywords = ["ocel", "process-mining", "event-log", "cli", "ocel2"]
+categories = ["command-line-utilities", "science"]
+
+[dependencies]
+ocel-core = { path = "../ocel-core", version = "0.1.0" }
+clap = { version = "4", features = ["derive"] }
+
+[lints]
+workspace = true
