@@ -1,4 +1,4 @@
-//! Python bindings for `ocel-core`.
+//! Python bindings for `ocel`.
 //!
 //! Exposes OCEL 2.0 logs to Python as the `ocel` module: reading/writing the
 //! three formats, validation, filtering, connected-components sampling, and
@@ -10,8 +10,8 @@ use pyo3::exceptions::{PyIOError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 
-use ocel_core::io::{json, sqlite, xml};
-use ocel_core::{AttrValue, Ocel};
+use ocel::io::{json, sqlite, xml};
+use ocel::{AttrValue, Ocel};
 
 /// An OCEL 2.0 event log.
 #[pyclass(frozen)]
@@ -19,7 +19,7 @@ struct OcelLog {
     inner: Ocel,
 }
 
-fn io_err(e: ocel_core::IoError) -> PyErr {
+fn io_err(e: ocel::IoError) -> PyErr {
     PyIOError::new_err(e.to_string())
 }
 
@@ -117,7 +117,7 @@ impl OcelLog {
 
     /// Spec-conformance violations as human-readable strings (empty = valid).
     fn validate(&self) -> Vec<String> {
-        ocel_core::validate::validate(&self.inner)
+        ocel::validate::validate(&self.inner)
             .iter()
             .map(ToString::to_string)
             .collect()
@@ -264,8 +264,10 @@ impl OcelLog {
 }
 
 /// OCEL 2.0 event logs: read, write, validate, filter, and sample.
-#[pymodule]
-fn ocel(m: &Bound<'_, PyModule>) -> PyResult<()> {
+// The function is named ocel_py to avoid clashing with the `ocel` dependency
+// crate; the Python module is still imported as `ocel` via the name attribute.
+#[pymodule(name = "ocel")]
+fn ocel_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<OcelLog>()?;
     m.add_function(wrap_pyfunction!(read, m)?)?;
     m.add_function(wrap_pyfunction!(read_json, m)?)?;

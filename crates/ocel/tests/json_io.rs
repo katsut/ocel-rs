@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use ocel_core::io::json;
+use ocel::io::json;
 
 fn fixture_path(name: &str) -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

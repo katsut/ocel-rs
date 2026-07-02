@@ -1,6 +1,6 @@
 [package]
 name = "ocel-py"
-description = "Python bindings for ocel-core (OCEL 2.0 event logs)"
+description = "Python bindings for ocel (OCEL 2.0 event logs)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,11 +8,13 @@ repository.workspace = true
 publish = false # distributed as a Python package (maturin), not on crates.io
 
 [lib]
-name = "ocel"
+# lib target is named ocel_py to avoid colliding with the `ocel` dependency;
+# maturin renames the extension module to `ocel` (see pyproject.toml).
+name = "ocel_py"
 crate-type = ["cdylib"]
 
 [dependencies]
-ocel-core = { path = "../ocel-core", version = "0.1.0" }
+ocel = { path = "../ocel", version = "0.1.0" }
 chrono.workspace = true
 pyo3 = { version = "0.29", features = ["extension-module", "abi3-py39", "chrono"] }
 

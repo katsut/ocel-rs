@@ -10,8 +10,12 @@ readme = "../../README.md"
 keywords = ["ocel", "process-mining", "event-log", "cli", "ocel2"]
 categories = ["command-line-utilities", "science"]
 
+[[bin]]
+name = "ocel"
+path = "src/main.rs"
+
 [dependencies]
-ocel-core = { path = "../ocel-core", version = "0.1.0" }
+ocel = { path = "../ocel", version = "0.1.0" }
 clap = { version = "4", features = ["derive"] }
 
 [lints]

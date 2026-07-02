@@ -6,8 +6,8 @@
 
 use std::path::PathBuf;
 
-use ocel_core::io::{json, sqlite, xml};
-use ocel_core::Ocel;
+use ocel::io::{json, sqlite, xml};
+use ocel::Ocel;
 
 fn official(name: &str) -> Option<PathBuf> {
     let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

@@ -3,14 +3,14 @@
 //! Run with:
 //! ```sh
 //! sh scripts/fetch-official-fixtures.sh --large
-//! cargo run -p ocel-core --example bench --release
+//! cargo run -p ocel --example bench --release
 //! ```
 
 use std::path::PathBuf;
 use std::time::Instant;
 
-use ocel_core::io::{json, sqlite, xml};
-use ocel_core::Ocel;
+use ocel::io::{json, sqlite, xml};
+use ocel::Ocel;
 
 const RUNS: usize = 7;
 

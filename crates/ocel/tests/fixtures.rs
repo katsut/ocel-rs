@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use ocel_core::{AttrValue, Ocel};
+use ocel::{AttrValue, Ocel};
 
 fn fixture(name: &str) -> String {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

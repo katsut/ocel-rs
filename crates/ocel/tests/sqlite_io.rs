@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
-use ocel_core::io::sqlite;
-use ocel_core::{
+use ocel::io::sqlite;
+use ocel::{
     AttrType, AttrValue, AttributeDefinition, Event, EventAttribute, EventType, Object,
     ObjectAttribute, ObjectType, Ocel, Relationship,
 };

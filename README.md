@@ -46,7 +46,7 @@ no DataFrames involved:
 | filter by 3 event types | 10 ms |
 | write SQLite | 252 ms |
 
-Reproduce: `cargo run -p ocel-core --example bench --release`
+Reproduce: `cargo run -p ocel --example bench --release`
 
 ### From Python, vs pm4py
 
@@ -93,7 +93,7 @@ sample.write_json("sample.json")
 ## Quickstart (Rust)
 
 ```rust
-use ocel_core::io::{json, sqlite};
+use ocel::io::{json, sqlite};
 
 // Read an OCEL 2.0 JSON log and write it out as SQLite.
 let ocel = json::read_path("log.jsonocel")?;
@@ -105,8 +105,8 @@ let sub = ocel.filter_event_types(&["place order"]);
 let sample = ocel.sample_components(10);
 ```
 
-See [`crates/ocel-core/examples/roundtrip.rs`](crates/ocel-core/examples/roundtrip.rs)
-for a runnable example (`cargo run -p ocel-core --example roundtrip`).
+See [`crates/ocel/examples/roundtrip.rs`](crates/ocel/examples/roundtrip.rs)
+for a runnable example (`cargo run -p ocel --example roundtrip`).
 
 ## Quickstart (CLI)
 
@@ -119,7 +119,7 @@ ocel validate log.sqlite               # non-zero exit on violations
 
 ```
 crates/
-├── ocel-core/    # data model + I/O + validation + graph/filter/sampling
+├── ocel/    # data model + I/O + validation + graph/filter/sampling
 ├── ocel-cli/     # `ocel` command-line tool
 └── ocel-py/      # Python bindings (module name: ocel)
 ```

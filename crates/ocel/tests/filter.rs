@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use chrono::DateTime;
-use ocel_core::io::{json, sqlite};
-use ocel_core::Ocel;
+use ocel::io::{json, sqlite};
+use ocel::Ocel;
 
 fn fixture(name: &str) -> PathBuf {
     let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

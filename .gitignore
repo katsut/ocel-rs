@@ -24,4 +24,4 @@ pkg/
 .env
 
 # Downloaded (non-committed) official test fixtures
-crates/ocel-core/tests/fixtures/official/
+crates/ocel/tests/fixtures/official/

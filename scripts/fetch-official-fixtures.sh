@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Download official OCEL 2.0 fixtures for extended round-trip tests.
 # These files are NOT committed (to keep their licenses out of this MIT crate).
-# Output: crates/ocel-core/tests/fixtures/official/
+# Output: crates/ocel/tests/fixtures/official/
 #
 # Sources:
 # - PM4Py ocel20_example (small, all-feature)
@@ -9,7 +9,7 @@
 #   `--large` to include it (~64 MB across three formats).
 set -eu
 
-dir="$(dirname "$0")/../crates/ocel-core/tests/fixtures/official"
+dir="$(dirname "$0")/../crates/ocel/tests/fixtures/official"
 base="https://raw.githubusercontent.com/process-intelligence-solutions/pm4py/release/tests/input_data/ocel"
 zenodo="https://zenodo.org/api/records/18373906/files"
 

@@ -300,15 +300,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ocel-cli"
-version = "0.1.0"
-dependencies = [
- "clap",
- "ocel-core",
-]
-
-[[package]]
-name = "ocel-core"
+name = "ocel"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -320,11 +312,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ocel-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "ocel",
+]
+
+[[package]]
 name = "ocel-py"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "ocel-core",
+ "ocel",
  "pyo3",
  "pyo3-build-config",
 ]

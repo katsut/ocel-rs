@@ -1,10 +1,10 @@
 //! Build a tiny OCEL 2.0 log, then round-trip it through JSON and `SQLite`.
 //!
-//! Run with: `cargo run -p ocel-core --example roundtrip`
+//! Run with: `cargo run -p ocel --example roundtrip`
 
 use chrono::Utc;
-use ocel_core::io::{json, sqlite};
-use ocel_core::{Event, EventType, Object, ObjectType, Ocel, Relationship};
+use ocel::io::{json, sqlite};
+use ocel::{Event, EventType, Object, ObjectType, Ocel, Relationship};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Build a small log through the validating builder.
