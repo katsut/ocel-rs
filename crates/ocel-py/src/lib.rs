@@ -2,13 +2,21 @@
 //!
 //! Exposes OCEL 2.0 logs to Python as the `ocel` module: reading/writing the
 //! three formats, validation, filtering, connected-components sampling, and
-//! columnar exports (dicts of columns that feed straight into Polars/pandas).
+//! columnar exports — as plain dicts of columns, or as Arrow tables via the
+//! Arrow `PyCapsule` interface (zero-copy into Polars / pyarrow / pandas).
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
+use arrow_array::{
+    ArrayRef, BooleanArray, Float64Array, Int64Array, RecordBatch, StringArray,
+    TimestampMicrosecondArray,
+};
+use arrow_schema::{DataType, Field, Schema, SchemaRef, TimeUnit};
 use pyo3::exceptions::{PyIOError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use pyo3_arrow::PyTable;
 
 use ocel::io::{json, sqlite, xml};
 use ocel::{AttrValue, Ocel};
@@ -31,6 +39,92 @@ fn attr_to_py<'py>(py: Python<'py>, value: &AttrValue) -> PyResult<Bound<'py, Py
         AttrValue::Boolean(b) => b.into_pyobject(py)?.to_owned().into_any(),
         AttrValue::Time(t) => t.into_pyobject(py)?.into_any(),
     })
+}
+
+// ---------------------------------------------------------------------------
+// Arrow export helpers
+// ---------------------------------------------------------------------------
+
+fn arrow_err(e: impl std::fmt::Display) -> PyErr {
+    PyValueError::new_err(e.to_string())
+}
+
+fn utf8_field(name: &str) -> Field {
+    Field::new(name, DataType::Utf8, false)
+}
+
+fn ts_type() -> DataType {
+    DataType::Timestamp(TimeUnit::Microsecond, Some("UTC".into()))
+}
+
+fn utf8_col<'a, I: IntoIterator<Item = &'a str>>(values: I) -> ArrayRef {
+    Arc::new(StringArray::from_iter_values(values))
+}
+
+fn ts_col(values: Vec<i64>) -> ArrayRef {
+    Arc::new(TimestampMicrosecondArray::from(values).with_timezone("UTC"))
+}
+
+fn table(fields: Vec<Field>, columns: Vec<ArrayRef>) -> PyResult<PyTable> {
+    let schema: SchemaRef = Arc::new(Schema::new(fields));
+    let batch = RecordBatch::try_new(schema.clone(), columns).map_err(arrow_err)?;
+    PyTable::try_new(vec![batch], schema).map_err(arrow_err)
+}
+
+/// Long-format attribute values as typed Arrow columns with nulls
+/// (Arrow columns are homogeneous, so the mixed-type `value` splits by type).
+#[derive(Default)]
+struct AttrColumns {
+    strings: Vec<Option<String>>,
+    integers: Vec<Option<i64>>,
+    floats: Vec<Option<f64>>,
+    booleans: Vec<Option<bool>>,
+    times: Vec<Option<i64>>,
+}
+
+impl AttrColumns {
+    fn push(&mut self, value: &AttrValue) {
+        self.strings.push(match value {
+            AttrValue::String(s) => Some(s.clone()),
+            _ => None,
+        });
+        self.integers.push(match value {
+            AttrValue::Integer(i) => Some(*i),
+            _ => None,
+        });
+        self.floats.push(match value {
+            AttrValue::Float(f) => Some(*f),
+            _ => None,
+        });
+        self.booleans.push(match value {
+            AttrValue::Boolean(b) => Some(*b),
+            _ => None,
+        });
+        self.times.push(match value {
+            AttrValue::Time(t) => Some(t.timestamp_micros()),
+            _ => None,
+        });
+    }
+
+    fn fields() -> Vec<Field> {
+        vec![
+            Field::new("value_string", DataType::Utf8, true),
+            Field::new("value_integer", DataType::Int64, true),
+            Field::new("value_float", DataType::Float64, true),
+            Field::new("value_boolean", DataType::Boolean, true),
+            Field::new("value_time", ts_type(), true),
+        ]
+    }
+
+    fn columns(self) -> Vec<ArrayRef> {
+        vec![
+            Arc::new(StringArray::from(self.strings)),
+            Arc::new(Int64Array::from(self.integers)),
+            Arc::new(Float64Array::from(self.floats)),
+            Arc::new(BooleanArray::from(self.booleans)),
+            Arc::new(TimestampMicrosecondArray::from(self.times).with_timezone("UTC")),
+        ]
+    }
 }
 
 /// Read an OCEL 2.0 log, choosing the format by file extension
@@ -260,6 +354,132 @@ impl OcelLog {
     fn connected_components<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
         let graph = self.inner.object_graph();
         PyList::new(py, graph.connected_components())
+    }
+
+    /// Events as an Arrow table: `id`, `type`, `time` (timestamp[us, UTC]).
+    fn events_arrow(&self) -> PyResult<PyTable> {
+        let cols = self.inner.event_columns();
+        table(
+            vec![
+                utf8_field("id"),
+                utf8_field("type"),
+                Field::new("time", ts_type(), false),
+            ],
+            vec![
+                utf8_col(cols.ids),
+                utf8_col(cols.types),
+                ts_col(
+                    cols.times
+                        .iter()
+                        .map(chrono::DateTime::timestamp_micros)
+                        .collect(),
+                ),
+            ],
+        )
+    }
+
+    /// Objects as an Arrow table: `id`, `type`.
+    fn objects_arrow(&self) -> PyResult<PyTable> {
+        table(
+            vec![utf8_field("id"), utf8_field("type")],
+            vec![
+                utf8_col(self.inner.objects.iter().map(|o| o.id.as_str())),
+                utf8_col(self.inner.objects.iter().map(|o| o.object_type.as_str())),
+            ],
+        )
+    }
+
+    /// `E2O` relations as an Arrow table: `event_id`, `object_id`, `qualifier`.
+    fn relations_arrow(&self) -> PyResult<PyTable> {
+        let mut event_ids = Vec::new();
+        let mut object_ids = Vec::new();
+        let mut qualifiers = Vec::new();
+        for rel in self.inner.e2o() {
+            event_ids.push(rel.event_id);
+            object_ids.push(rel.object_id);
+            qualifiers.push(rel.qualifier);
+        }
+        table(
+            vec![
+                utf8_field("event_id"),
+                utf8_field("object_id"),
+                utf8_field("qualifier"),
+            ],
+            vec![
+                utf8_col(event_ids),
+                utf8_col(object_ids),
+                utf8_col(qualifiers),
+            ],
+        )
+    }
+
+    /// `O2O` relations as an Arrow table: `source_id`, `target_id`, `qualifier`.
+    fn o2o_arrow(&self) -> PyResult<PyTable> {
+        let mut source_ids = Vec::new();
+        let mut target_ids = Vec::new();
+        let mut qualifiers = Vec::new();
+        for rel in self.inner.o2o() {
+            source_ids.push(rel.source_id);
+            target_ids.push(rel.target_id);
+            qualifiers.push(rel.qualifier);
+        }
+        table(
+            vec![
+                utf8_field("source_id"),
+                utf8_field("target_id"),
+                utf8_field("qualifier"),
+            ],
+            vec![
+                utf8_col(source_ids),
+                utf8_col(target_ids),
+                utf8_col(qualifiers),
+            ],
+        )
+    }
+
+    /// Event attributes as an Arrow table: `event_id`, `name`, and typed
+    /// value columns with nulls (`value_string` / `value_integer` /
+    /// `value_float` / `value_boolean` / `value_time`).
+    fn event_attributes_arrow(&self) -> PyResult<PyTable> {
+        let mut event_ids = Vec::new();
+        let mut names = Vec::new();
+        let mut values = AttrColumns::default();
+        for event in &self.inner.events {
+            for attr in &event.attributes {
+                event_ids.push(event.id.as_str());
+                names.push(attr.name.as_str());
+                values.push(&attr.value);
+            }
+        }
+        let mut fields = vec![utf8_field("event_id"), utf8_field("name")];
+        fields.extend(AttrColumns::fields());
+        let mut columns = vec![utf8_col(event_ids), utf8_col(names)];
+        columns.extend(values.columns());
+        table(fields, columns)
+    }
+
+    /// Dynamic object attributes as an Arrow table: `object_id`, `name`,
+    /// typed value columns with nulls, and `time` (timestamp[us, UTC]).
+    fn object_attributes_arrow(&self) -> PyResult<PyTable> {
+        let mut object_ids = Vec::new();
+        let mut names = Vec::new();
+        let mut values = AttrColumns::default();
+        let mut times = Vec::new();
+        for object in &self.inner.objects {
+            for attr in &object.attributes {
+                object_ids.push(object.id.as_str());
+                names.push(attr.name.as_str());
+                values.push(&attr.value);
+                times.push(attr.time.timestamp_micros());
+            }
+        }
+        let mut fields = vec![utf8_field("object_id"), utf8_field("name")];
+        fields.extend(AttrColumns::fields());
+        fields.push(Field::new("time", ts_type(), false));
+        let mut columns = vec![utf8_col(object_ids), utf8_col(names)];
+        columns.extend(values.columns());
+        columns.push(ts_col(times));
+        table(fields, columns)
     }
 }
 

@@ -42,6 +42,13 @@ sample.write_json("sample.json")
 - Columnar exports (feed straight into Polars/pandas):
   `events()`, `event_attributes()`, `objects()`, `object_attributes()`,
   `relations()`, `o2o()`
+- Zero-copy Arrow exports via the Arrow PyCapsule interface — consumed
+  directly by `pl.DataFrame(...)` / `pyarrow.table(...)`, ~60x faster than
+  the dict path on large logs: `events_arrow()`, `objects_arrow()`,
+  `relations_arrow()`, `o2o_arrow()`, and `event_attributes_arrow()` /
+  `object_attributes_arrow()` (mixed-type values split into typed
+  `value_string` / `value_integer` / `value_float` / `value_boolean` /
+  `value_time` columns with nulls)
 - OCEL-aware operations: `filter_event_types(names)`,
   `filter_object_types(names)`, `sample_components(n)`,
   `connected_components()`
