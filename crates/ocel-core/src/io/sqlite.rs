@@ -3,17 +3,20 @@
 //! Follows the OCEL 2.0 relational schema: `event_map_type` / `object_map_type`
 //! map readable type names to sanitized per-type table suffixes; base tables
 //! `event` / `object` / `event_object` / `object_object`; and one `event_<Type>`
-//! / `object_<Type>` table per type. Attribute values are stored as `TEXT`, so
-//! reading yields [`AttrValue::String`] (the relational format does not carry
-//! attribute data types).
+//! / `object_<Type>` table per type. Declared attribute types are encoded as the
+//! column type of the per-type tables (`INTEGER` / `REAL` / `BOOLEAN` /
+//! `TIMESTAMP` / `TEXT`) and values are stored natively, so typed logs round-trip.
+//! Files written by tools that use plain `TEXT` columns (e.g. `PM4Py`) read
+//! leniently as strings.
 
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use rusqlite::types::Value;
 use rusqlite::{params_from_iter, Connection};
 
+use crate::io::coerce::{apply_declared_types, parse_time_lenient};
 use crate::io::IoError;
 use crate::model::{
     AttrType, AttrValue, AttributeDefinition, Event, EventAttribute, EventType, Object,
@@ -35,36 +38,45 @@ fn sanitize_suffix(name: &str) -> String {
 }
 
 fn parse_time(s: &str) -> Result<DateTime<Utc>, IoError> {
-    for fmt in ["%Y-%m-%d %H:%M:%S%.f", "%Y-%m-%d %H:%M:%S"] {
-        if let Ok(ndt) = NaiveDateTime::parse_from_str(s, fmt) {
-            return Ok(ndt.and_utc());
-        }
-    }
-    if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
-        return Ok(dt.to_utc());
-    }
-    Err(IoError::Format(format!("invalid timestamp: {s}")))
+    parse_time_lenient(s).ok_or_else(|| IoError::Format(format!("invalid timestamp: {s}")))
 }
 
 fn format_time(t: DateTime<Utc>) -> String {
     t.naive_utc().format("%Y-%m-%d %H:%M:%S%.f").to_string()
 }
 
-fn attr_to_text(value: &AttrValue) -> String {
-    match value {
-        AttrValue::String(s) => s.clone(),
-        AttrValue::Integer(i) => i.to_string(),
-        AttrValue::Float(f) => f.to_string(),
-        AttrValue::Boolean(b) => b.to_string(),
-        AttrValue::Time(t) => t.to_rfc3339(),
+/// The `SQLite` column type used to encode a declared attribute type.
+fn column_type(ty: AttrType) -> &'static str {
+    match ty {
+        AttrType::String => "TEXT",
+        AttrType::Integer => "INTEGER",
+        AttrType::Float => "REAL",
+        AttrType::Boolean => "BOOLEAN",
+        AttrType::Time => "TIMESTAMP",
     }
 }
 
-fn attr_defs(cols: &[String]) -> Vec<AttributeDefinition> {
+/// Recover a declared attribute type from a column declaration.
+fn attr_type_of_column(decl: &str) -> AttrType {
+    let d = decl.to_ascii_uppercase();
+    if d.contains("INT") {
+        AttrType::Integer
+    } else if d.contains("REAL") || d.contains("FLOA") || d.contains("DOUB") {
+        AttrType::Float
+    } else if d.contains("BOOL") {
+        AttrType::Boolean
+    } else if d.contains("TIME") || d.contains("DATE") {
+        AttrType::Time
+    } else {
+        AttrType::String
+    }
+}
+
+fn attr_defs(cols: &[(String, String)]) -> Vec<AttributeDefinition> {
     cols.iter()
-        .map(|c| AttributeDefinition {
-            name: c.clone(),
-            value_type: AttrType::String,
+        .map(|(name, decl)| AttributeDefinition {
+            name: name.clone(),
+            value_type: attr_type_of_column(decl),
         })
         .collect()
 }
@@ -74,9 +86,32 @@ fn attr_columns_ddl(attributes: &[AttributeDefinition]) -> String {
     for a in attributes {
         ddl.push_str(", ");
         ddl.push_str(&quote_ident(&a.name));
-        ddl.push_str(" TEXT");
+        ddl.push(' ');
+        ddl.push_str(column_type(a.value_type));
     }
     ddl
+}
+
+/// Convert a raw `SQLite` value to an attribute value (`None` for NULL/blob).
+/// Declaration-driven coercion refines it afterwards.
+fn attr_from_sql(value: Value) -> Option<AttrValue> {
+    match value {
+        Value::Null | Value::Blob(_) => None,
+        Value::Integer(i) => Some(AttrValue::Integer(i)),
+        Value::Real(f) => Some(AttrValue::Float(f)),
+        Value::Text(s) => Some(AttrValue::String(s)),
+    }
+}
+
+/// Convert an attribute value to its native `SQLite` storage value.
+fn sql_value(value: &AttrValue) -> Value {
+    match value {
+        AttrValue::String(s) => Value::Text(s.clone()),
+        AttrValue::Integer(i) => Value::Integer(*i),
+        AttrValue::Float(f) => Value::Real(*f),
+        AttrValue::Boolean(b) => Value::Integer(i64::from(*b)),
+        AttrValue::Time(t) => Value::Text(format_time(*t)),
+    }
 }
 
 fn epoch() -> DateTime<Utc> {
@@ -103,46 +138,61 @@ fn read_connection(conn: &Connection) -> Result<Ocel, IoError> {
             name: name.clone(),
             attributes: attr_defs(&attr_cols),
         });
-        read_events_of_type(conn, &table, &name, &attr_cols, &mut events)?;
+        let names: Vec<String> = attr_cols.into_iter().map(|(name, _)| name).collect();
+        read_events_of_type(conn, &table, &name, &names, &mut events)?;
     }
 
     let mut object_types = Vec::new();
     let mut objects = Vec::new();
     for (name, suffix) in read_type_map(conn, "object_map_type")? {
         let table = format!("object_{suffix}");
-        let has_changed = columns_of(conn, &table)?.iter().any(|c| c == CHANGED_FIELD);
+        let has_changed = columns_of(conn, &table)?
+            .iter()
+            .any(|(name, _)| name == CHANGED_FIELD);
         let attr_cols = attr_columns(conn, &table, has_changed)?;
         object_types.push(ObjectType {
             name: name.clone(),
             attributes: attr_defs(&attr_cols),
         });
-        read_objects_of_type(conn, &table, &name, &attr_cols, has_changed, &mut objects)?;
+        let names: Vec<String> = attr_cols.into_iter().map(|(name, _)| name).collect();
+        read_objects_of_type(conn, &table, &name, &names, has_changed, &mut objects)?;
     }
 
     attach_e2o(conn, &mut events)?;
     attach_o2o(conn, &mut objects)?;
 
-    Ok(Ocel {
+    let mut ocel = Ocel {
         event_types,
         object_types,
         events,
         objects,
-    })
+    };
+    apply_declared_types(&mut ocel);
+    Ok(ocel)
 }
 
-fn columns_of(conn: &Connection, table: &str) -> Result<Vec<String>, IoError> {
+/// Column (name, declared type) pairs of `table`.
+fn columns_of(conn: &Connection, table: &str) -> Result<Vec<(String, String)>, IoError> {
     let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", quote_ident(table)))?;
-    let names = stmt
-        .query_map([], |row| row.get::<_, String>("name"))?
+    let cols = stmt
+        .query_map([], |row| {
+            Ok((row.get::<_, String>("name")?, row.get::<_, String>("type")?))
+        })?
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(names)
+    Ok(cols)
 }
 
-fn attr_columns(conn: &Connection, table: &str, has_changed: bool) -> Result<Vec<String>, IoError> {
+fn attr_columns(
+    conn: &Connection,
+    table: &str,
+    has_changed: bool,
+) -> Result<Vec<(String, String)>, IoError> {
     let cols = columns_of(conn, table)?;
     Ok(cols
         .into_iter()
-        .filter(|c| c != "ocel_id" && c != "ocel_time" && !(has_changed && c == CHANGED_FIELD))
+        .filter(|(name, _)| {
+            name != "ocel_id" && name != "ocel_time" && !(has_changed && name == CHANGED_FIELD)
+        })
         .collect())
 }
 
@@ -176,10 +226,10 @@ fn read_events_of_type(
         let time = parse_time(&row.get::<_, String>("ocel_time")?)?;
         let mut attributes = Vec::new();
         for col in attr_cols {
-            if let Some(value) = row.get::<_, Option<String>>(col.as_str())? {
+            if let Some(value) = attr_from_sql(row.get::<_, Value>(col.as_str())?) {
                 attributes.push(EventAttribute {
                     name: col.clone(),
-                    value: AttrValue::String(value),
+                    value,
                 });
             }
         }
@@ -219,20 +269,20 @@ fn read_objects_of_type(
         let entry = grouped.entry(id).or_default();
         match changed.as_deref() {
             Some(field) if !field.is_empty() => {
-                if let Some(value) = row.get::<_, Option<String>>(field)? {
+                if let Some(value) = attr_from_sql(row.get::<_, Value>(field)?) {
                     entry.push(ObjectAttribute {
                         name: field.to_owned(),
-                        value: AttrValue::String(value),
+                        value,
                         time,
                     });
                 }
             }
             _ => {
                 for col in attr_cols {
-                    if let Some(value) = row.get::<_, Option<String>>(col.as_str())? {
+                    if let Some(value) = attr_from_sql(row.get::<_, Value>(col.as_str())?) {
                         entry.push(ObjectAttribute {
                             name: col.clone(),
-                            value: AttrValue::String(value),
+                            value,
                             time,
                         });
                     }
@@ -501,7 +551,7 @@ fn event_row_values(event: &Event, attr_cols: &[&str]) -> Vec<Value> {
         Value::Text(format_time(event.time)),
     ];
     for &col in attr_cols {
-        values.push(text_or_null(attrs.get(col).copied()));
+        values.push(value_or_null(attrs.get(col).copied()));
     }
     values
 }
@@ -533,10 +583,9 @@ fn write_objects(
 
 fn object_row_values(object: &Object, attr_cols: &[&str], has_changed: bool) -> Vec<Vec<Value>> {
     if object.attributes.is_empty() {
-        let mut row = vec![
-            Value::Text(object.id.clone()),
-            Value::Text(format_time(epoch())),
-        ];
+        let mut row = vec![Value::Text(object.id.clone())];
+        row.extend(attr_cols.iter().map(|_| Value::Null));
+        row.push(Value::Text(format_time(epoch())));
         if has_changed {
             row.push(Value::Null);
         }
@@ -559,7 +608,7 @@ fn object_row_values(object: &Object, attr_cols: &[&str], has_changed: bool) -> 
     let mut rows = Vec::new();
     let mut initial_row = vec![Value::Text(object.id.clone())];
     for &col in attr_cols {
-        initial_row.push(text_or_null(initial.get(col).copied()));
+        initial_row.push(value_or_null(initial.get(col).copied()));
     }
     initial_row.push(Value::Text(format_time(earliest)));
     if has_changed {
@@ -577,7 +626,7 @@ fn object_row_values(object: &Object, attr_cols: &[&str], has_changed: bool) -> 
         let mut row = vec![Value::Text(object.id.clone())];
         for &col in attr_cols {
             if col == change.name {
-                row.push(Value::Text(attr_to_text(&change.value)));
+                row.push(sql_value(&change.value));
             } else {
                 row.push(Value::Null);
             }
@@ -589,6 +638,6 @@ fn object_row_values(object: &Object, attr_cols: &[&str], has_changed: bool) -> 
     rows
 }
 
-fn text_or_null(value: Option<&AttrValue>) -> Value {
-    value.map_or(Value::Null, |v| Value::Text(attr_to_text(v)))
+fn value_or_null(value: Option<&AttrValue>) -> Value {
+    value.map_or(Value::Null, sql_value)
 }

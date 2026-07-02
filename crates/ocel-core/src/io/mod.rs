@@ -1,5 +1,6 @@
 //! Format readers and writers for OCEL 2.0.
 
+pub(crate) mod coerce;
 pub mod json;
 pub mod sqlite;
 pub mod xml;

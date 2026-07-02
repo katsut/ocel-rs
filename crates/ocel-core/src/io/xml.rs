@@ -1,15 +1,16 @@
 //! OCEL 2.0 `XML` reader and writer.
 //!
 //! Maps the OCEL 2.0 XML shape (`<log>` with `object-types` / `event-types` /
-//! `objects` / `events`) to and from the model. Attribute values are text, so
-//! reading yields [`AttrValue::String`]; timestamps accept both `Z`-suffixed and
-//! offset-less ISO 8601 (treated as UTC).
+//! `objects` / `events`) to and from the model. Attribute values are text and are
+//! coerced to their declared types after parsing; timestamps accept both
+//! `Z`-suffixed and offset-less ISO 8601 (treated as UTC).
 
 use std::path::Path;
 
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::io::coerce::{apply_declared_types, attr_to_text, parse_time_lenient};
 use crate::io::IoError;
 use crate::model::{
     AttrType, AttrValue, AttributeDefinition, Event, EventAttribute, EventType, Object,
@@ -175,26 +176,8 @@ fn attr_type_to_str(ty: AttrType) -> &'static str {
     }
 }
 
-fn attr_to_text(value: &AttrValue) -> String {
-    match value {
-        AttrValue::String(s) => s.clone(),
-        AttrValue::Integer(i) => i.to_string(),
-        AttrValue::Float(f) => f.to_string(),
-        AttrValue::Boolean(b) => b.to_string(),
-        AttrValue::Time(t) => t.to_rfc3339(),
-    }
-}
-
 fn parse_time(s: &str) -> Result<DateTime<Utc>, IoError> {
-    if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
-        return Ok(dt.to_utc());
-    }
-    for fmt in ["%Y-%m-%dT%H:%M:%S%.f", "%Y-%m-%dT%H:%M:%S"] {
-        if let Ok(ndt) = NaiveDateTime::parse_from_str(s, fmt) {
-            return Ok(ndt.and_utc());
-        }
-    }
-    Err(IoError::Format(format!("invalid timestamp: {s}")))
+    parse_time_lenient(s).ok_or_else(|| IoError::Format(format!("invalid timestamp: {s}")))
 }
 
 // ---------------------------------------------------------------------------
@@ -278,12 +261,14 @@ fn to_model(log: XmlLog) -> Result<Ocel, IoError> {
         });
     }
 
-    Ok(Ocel {
+    let mut ocel = Ocel {
         event_types,
         object_types,
         events,
         objects,
-    })
+    };
+    apply_declared_types(&mut ocel);
+    Ok(ocel)
 }
 
 fn rel_dtos(rels: &[Relationship]) -> Option<Relationships> {
