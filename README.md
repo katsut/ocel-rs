@@ -27,20 +27,46 @@ read, write, convert, validate, filter, and sample object-centric event logs.
 
 ## Performance
 
-Same data (Zenodo [Order Management](https://doi.org/10.5281/zenodo.8337463),
-21,008 events / 10,840 objects), same operations, median of 3 runs — Apple M4
-Max, Python 3.13, pm4py 2.7.23:
+All numbers: Zenodo [Order Management](https://doi.org/10.5281/zenodo.8337463)
+(21,008 events / 10,840 objects), median of 7 runs, Apple M4 Max. Fetch the
+dataset first: `sh scripts/fetch-official-fixtures.sh --large`.
+
+### Embedded in Rust
+
+Applications (e.g. process-mining tools) work on the model and graph directly —
+no DataFrames involved:
+
+| operation | time |
+|---|---:|
+| read SQLite | 57 ms |
+| read JSON | 49 ms |
+| read XML | 72 ms |
+| validate | 3 ms |
+| object graph + connected components | 26 ms |
+| filter by 3 event types | 10 ms |
+| write SQLite | 252 ms |
+
+Reproduce: `cargo run -p ocel-core --example bench --release`
+
+### From Python, vs pm4py
+
+Python 3.13, pm4py 2.7.23. Both tools load identical events/objects/E2O/O2O
+counts. To keep the comparison fair, the read rows include materializing **all
+six** of ocel's columnar exports into Polars DataFrames, since pm4py's readers
+return pandas DataFrames:
 
 | operation | ocel (Rust) | pm4py | speedup |
 |---|---:|---:|---:|
-| read SQLite (21K events) | 60 ms | 425 ms | 7.1x |
-| read JSON | 51 ms | 586 ms | 11.6x |
-| read XML | 71 ms | 390 ms | 5.5x |
-| filter by 3 event types | 10 ms | 16 ms | 1.7x |
-| write SQLite | 256 ms | 413 ms | 1.6x |
+| read SQLite → DataFrames | 115 ms | 447 ms | 3.9x |
+| read JSON → DataFrames | 111 ms | 603 ms | 5.4x |
+| read XML → DataFrames | 133 ms | 410 ms | 3.1x |
+| filter by 3 event types | 11 ms | 17 ms | 1.6x |
+| write SQLite | 257 ms | 395 ms | 1.5x |
 
-Reproduce with [`scripts/bench-pm4py-compare.py`](scripts/bench-pm4py-compare.py)
-(after `sh scripts/fetch-official-fixtures.sh --large`).
+Python code that stays on `OcelLog` methods (filter / sample / validate) skips
+the DataFrame cost entirely and runs at the Rust-native speeds above.
+
+Reproduce with [`scripts/bench-pm4py-compare.py`](scripts/bench-pm4py-compare.py).
 
 ## Quickstart (Python)
 
