@@ -86,33 +86,30 @@ fn detects_undeclared_attribute() {
         }));
 }
 
+/// Attribute names shared across types are allowed: the official datasets
+/// (e.g. Zenodo Order Management) use names like "price" in multiple types.
 #[test]
-fn detects_attribute_name_collision() {
+fn shared_attribute_names_across_types_are_valid() {
     let dup = || AttributeDefinition {
-        name: "shared".into(),
-        value_type: AttrType::String,
+        name: "price".into(),
+        value_type: AttrType::Float,
     };
     let ocel = Ocel {
         event_types: vec![],
         object_types: vec![
             ObjectType {
-                name: "a".into(),
+                name: "item".into(),
                 attributes: vec![dup()],
             },
             ObjectType {
-                name: "b".into(),
+                name: "product".into(),
                 attributes: vec![dup()],
             },
         ],
         events: vec![],
         objects: vec![],
     };
-    assert!(ocel
-        .validate()
-        .unwrap_err()
-        .contains(&Violation::AttributeNameCollision {
-            attribute: "shared".into(),
-        }));
+    assert_eq!(ocel.validate(), Ok(()));
 }
 
 /// The official `PM4Py` examples validate cleanly across all three formats.
