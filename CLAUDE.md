@@ -4,9 +4,9 @@ OCEL 2.0 データモデル・I/O・グラフライブラリ (Rust)。
 
 ## プロジェクト状態
 
-- フェーズ: spec / architecture 確定 → v0.1 実装着手
+- フェーズ: v0.1（core の read/write/validate）実装中
 - North Star: OSS 実用性（crates.io で使われる OCEL 2.0 ネイティブ Rust ライブラリ）
-- 計画・ADR・ロードマップは workspace リポジトリ（`ocel-workspace/docs/`）が正
+- ocel-rs 固有の技術決定は本リポジトリの `docs/`（自己完結）。全体レイヤリング・経緯・戦略・研究は workspace（private）が保持
 
 ## スコープ
 
@@ -41,14 +41,15 @@ crates/
 
 ## ドキュメント
 
-このリポジトリは **spec と architecture のみ**を持つ（計画・研究・ADR・ロードマップは workspace が正）。
+このリポジトリは **spec / architecture / ADR（ocel-rs 固有の技術決定）** を持ち、技術的に自己完結する。
 
 - `docs/development-guide.md` - 開発ガイド（TDD、コード品質、コミット規約）
 - `docs/architecture.md` - v0.1 アーキテクチャ（クレート/モジュール構成、モデル、API 制約）
 - `docs/spec-v0.1.md` - v0.1 仕様（スコープ、I/O、バリデーション、受け入れ基準）
+- `docs/adr/` - アーキテクチャ決定記録（ocel-rs 固有）
 
-計画・研究・意思決定は workspace リポジトリを参照:
-- `ocel-workspace/docs/roadmap.md`, `ocel-workspace/docs/adr/`, product-brief, research-notes ほか
+全体レイヤリング・経緯・戦略・研究は **workspace リポジトリ（private）** が保持:
+- `ocel-workspace/docs/adr/`（全体レイヤリング）, `roadmap.md`, product-brief, research-notes ほか
 
 ## 開発規約
 
