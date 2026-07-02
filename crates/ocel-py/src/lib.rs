@@ -131,19 +131,9 @@ impl AttrColumns {
 /// (`.json`/`.jsonocel`, `.sqlite`/`.db`, `.xml`/`.xmlocel`).
 #[pyfunction]
 fn read(path: PathBuf) -> PyResult<OcelLog> {
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or_default()
-        .to_ascii_lowercase();
-    match ext.as_str() {
-        "json" | "jsonocel" => read_json(path),
-        "sqlite" | "db" => read_sqlite(path),
-        "xml" | "xmlocel" => read_xml(path),
-        other => Err(PyValueError::new_err(format!(
-            "unknown file extension: {other:?}"
-        ))),
-    }
+    Ok(OcelLog {
+        inner: ocel::io::read_path(path).map_err(io_err)?,
+    })
 }
 
 /// Read an OCEL 2.0 JSON file.

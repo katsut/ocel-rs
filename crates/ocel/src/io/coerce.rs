@@ -12,17 +12,6 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 
 use crate::model::{AttrType, AttrValue, AttributeDefinition, Ocel};
 
-/// Render an attribute value as the text form used by the text-based formats.
-pub(crate) fn attr_to_text(value: &AttrValue) -> String {
-    match value {
-        AttrValue::String(s) => s.clone(),
-        AttrValue::Integer(i) => i.to_string(),
-        AttrValue::Float(f) => f.to_string(),
-        AttrValue::Boolean(b) => b.to_string(),
-        AttrValue::Time(t) => t.to_rfc3339(),
-    }
-}
-
 /// Parse a timestamp accepting RFC 3339 as well as offset-less ISO 8601 /
 /// space-separated forms (treated as UTC).
 pub(crate) fn parse_time_lenient(s: &str) -> Option<DateTime<Utc>> {
@@ -97,7 +86,7 @@ pub(crate) fn apply_declared_types(ocel: &mut Ocel) {
 fn coerce_value(value: &mut AttrValue, target: AttrType) {
     let coerced = match (target, &*value) {
         (AttrType::String, AttrValue::String(_)) => None,
-        (AttrType::String, v) => Some(AttrValue::String(attr_to_text(v))),
+        (AttrType::String, v) => Some(AttrValue::String(v.to_text())),
         (AttrType::Integer, AttrValue::String(s)) => {
             s.trim().parse::<i64>().ok().map(AttrValue::Integer)
         }
