@@ -8,6 +8,7 @@ pub mod filter;
 pub mod graph;
 pub mod io;
 pub mod model;
+pub mod sample;
 pub mod validate;
 
 pub use graph::ObjectGraph;
