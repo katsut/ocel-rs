@@ -4,6 +4,7 @@
 //! representations live in downstream crates and convert into [`Ocel`] via the
 //! [`OcelBuilder`] gate.
 
+pub mod filter;
 pub mod graph;
 pub mod io;
 pub mod model;
