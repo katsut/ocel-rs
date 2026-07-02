@@ -1,7 +1,7 @@
 # ocel-rs アーキテクチャ
 
 - **対象バージョン:** v0.1
-- **上位方針:** ワークスペースの [roadmap](https://github.com/katsut/ocel-workspace/blob/main/docs/roadmap.md) と [ADR 0001](https://github.com/katsut/ocel-workspace/blob/main/docs/adr/0001-core-model-and-etl-boundary.md)（コアは OCEL 2.0 ネイティブ / 中間表現は ETL 側）に従う。
+- **上位方針:** [ADR 0001: OCEL ネイティブ core](adr/0001-ocel-native-core.md)（コアは OCEL 2.0 ネイティブ、中間表現は ETL 側）に従う。ETL 側の境界は ocel-etl の [ADR 0001](https://github.com/katsut/ocel-etl/blob/main/docs/adr/0001-staging-log-and-ocel-boundary.md) を参照。
 
 ---
 

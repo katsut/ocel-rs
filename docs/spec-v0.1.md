@@ -2,7 +2,7 @@
 
 - **バージョン:** v0.1
 - **目的:** OCEL 2.0 の 3 フォーマット（JSON / SQLite / XML）を Rust で壊れずに読み書き・検証できるライブラリを crates.io に公開する。
-- **上位方針:** [roadmap](https://github.com/katsut/ocel-workspace/blob/main/docs/roadmap.md), [ADR 0001](https://github.com/katsut/ocel-workspace/blob/main/docs/adr/0001-core-model-and-etl-boundary.md), [architecture.md](architecture.md)
+- **上位方針:** [architecture.md](architecture.md), [ADR 0001: OCEL ネイティブ core](adr/0001-ocel-native-core.md)
 
 ---
 
@@ -26,7 +26,7 @@
 - **属性値の型:** `string` / `integer` / `float` / `boolean` / `time`（ISO 8601）。
 - **動的オブジェクト属性:** タイムスタンプ付きで変更履歴を保持し、任意時点の値を forward-fill で復元できる。初期値はエポック時刻。
 - **E2O / O2O の qualifier:** 任意文字列。同一 (event, object) ペアが異なる qualifier で複数関連できる。
-- **公開 API:** `OcelBuilder`（fallible）・イテレータ走査・列アクセサを提供（[ADR 0001](https://github.com/katsut/ocel-workspace/blob/main/docs/adr/0001-core-model-and-etl-boundary.md)）。
+- **公開 API:** `OcelBuilder`（fallible）・イテレータ走査・列アクセサを提供（[ADR 0001](adr/0001-ocel-native-core.md)）。
 
 ## 3. I/O 要件
 
