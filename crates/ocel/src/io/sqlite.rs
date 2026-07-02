@@ -477,19 +477,19 @@ fn write_base_rows(conn: &Connection, ocel: &Ocel) -> Result<(), IoError> {
 }
 
 fn write_relations(conn: &Connection, ocel: &Ocel) -> Result<(), IoError> {
-    let mut insert_e2o = conn.prepare(
+    let mut insert_event_object = conn.prepare(
         "INSERT OR IGNORE INTO \"event_object\" \
          (\"ocel_event_id\", \"ocel_object_id\", \"ocel_qualifier\") VALUES (?, ?, ?)",
     )?;
     for r in ocel.e2o() {
-        insert_e2o.execute((r.event_id, r.object_id, r.qualifier))?;
+        insert_event_object.execute((r.event_id, r.object_id, r.qualifier))?;
     }
-    let mut insert_o2o = conn.prepare(
+    let mut insert_object_object = conn.prepare(
         "INSERT OR IGNORE INTO \"object_object\" \
          (\"ocel_source_id\", \"ocel_target_id\", \"ocel_qualifier\") VALUES (?, ?, ?)",
     )?;
     for r in ocel.o2o() {
-        insert_o2o.execute((r.source_id, r.target_id, r.qualifier))?;
+        insert_object_object.execute((r.source_id, r.target_id, r.qualifier))?;
     }
     Ok(())
 }
