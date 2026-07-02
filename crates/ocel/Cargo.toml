@@ -16,7 +16,7 @@ serde_json.workspace = true
 chrono.workspace = true
 thiserror.workspace = true
 rusqlite = { version = "0.32", features = ["bundled"] }
-quick-xml = { version = "0.37", features = ["serialize"] }
+quick-xml = { version = "0.41", features = ["serialize"] }
 
 [dev-dependencies]
 chrono.workspace = true

@@ -6,7 +6,7 @@ build-backend = "maturin"
 name = "ocel"
 description = "OCEL 2.0 event logs: read, write, validate, filter, and sample (Rust-powered)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 keywords = ["ocel", "process-mining", "event-log", "object-centric"]
 classifiers = [
