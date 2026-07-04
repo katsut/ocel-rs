@@ -91,6 +91,15 @@ fn sample() -> Ocel {
 }
 
 #[test]
+fn reading_a_missing_file_creates_nothing() {
+    let path = tmp("ocel-rs-sqlite-does-not-exist.db");
+    let _ = std::fs::remove_file(&path);
+    assert!(sqlite::read_path(&path).is_err());
+    // the read-only open must not have created an empty database
+    assert!(!path.exists());
+}
+
+#[test]
 fn write_read_content_and_stability() {
     let path = tmp("ocel-rs-sqlite-content.db");
     sqlite::write_path(&sample(), &path).unwrap();

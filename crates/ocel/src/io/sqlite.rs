@@ -123,8 +123,15 @@ fn epoch() -> DateTime<Utc> {
 // ---------------------------------------------------------------------------
 
 /// Read an [`Ocel`] from an OCEL 2.0 `SQLite` file.
+///
+/// The file is opened read-only: a mistyped input path errors instead of
+/// leaving a freshly created empty database behind (rusqlite's default
+/// flags include `SQLITE_OPEN_CREATE`).
 pub fn read_path<P: AsRef<Path>>(path: P) -> Result<Ocel, IoError> {
-    let conn = Connection::open(path)?;
+    let conn = Connection::open_with_flags(
+        path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )?;
     read_connection(&conn)
 }
 
