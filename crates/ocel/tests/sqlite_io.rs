@@ -131,6 +131,69 @@ fn write_read_content_and_stability() {
     let _ = std::fs::remove_file(&path2);
 }
 
+/// Timestamp ties must resolve identically across formats: the reader must
+/// restore the master tables' (write) order, not the per-type-table grouping.
+/// Here the log order and the alphabetical type order disagree on purpose
+/// (`open issue` written before its same-second `label`, `zeta` before
+/// `alpha`) — type-grouped assembly would flip both pairs.
+#[test]
+fn read_restores_write_order_not_type_grouping() {
+    let bare_event = |id: &str, event_type: &str| Event {
+        id: id.into(),
+        event_type: event_type.into(),
+        time: ts(1_000_000),
+        attributes: vec![],
+        relationships: vec![],
+    };
+    let bare_object = |id: &str, object_type: &str| Object {
+        id: id.into(),
+        object_type: object_type.into(),
+        attributes: vec![],
+        relationships: vec![],
+    };
+    let model = Ocel {
+        event_types: vec![
+            EventType {
+                name: "open issue".into(),
+                attributes: vec![],
+            },
+            EventType {
+                name: "label".into(),
+                attributes: vec![],
+            },
+        ],
+        object_types: vec![
+            ObjectType {
+                name: "zeta".into(),
+                attributes: vec![],
+            },
+            ObjectType {
+                name: "alpha".into(),
+                attributes: vec![],
+            },
+        ],
+        events: vec![
+            bare_event("e-open", "open issue"),
+            bare_event("e-label", "label"),
+        ],
+        objects: vec![
+            bare_object("o-zeta", "zeta"),
+            bare_object("o-alpha", "alpha"),
+        ],
+    };
+
+    let path = tmp("ocel-rs-sqlite-order.db");
+    sqlite::write_path(&model, &path).unwrap();
+    let back = sqlite::read_path(&path).unwrap();
+
+    let event_ids: Vec<&str> = back.events.iter().map(|e| e.id.as_str()).collect();
+    assert_eq!(event_ids, vec!["e-open", "e-label"]);
+    let object_ids: Vec<&str> = back.objects.iter().map(|o| o.id.as_str()).collect();
+    assert_eq!(object_ids, vec!["o-zeta", "o-alpha"]);
+
+    let _ = std::fs::remove_file(&path);
+}
+
 fn official_path() -> PathBuf {
     let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     p.push("tests/fixtures/official/ocel20_example.sqlite");

@@ -165,6 +165,27 @@ fn read_connection(conn: &Connection) -> Result<Ocel, IoError> {
         read_objects_of_type(conn, &table, &name, &names, has_changed, &mut objects)?;
     }
 
+    // The per-type tables group rows by type, so `events`/`objects` are
+    // type-grouped here. The master tables hold the log's own order (rowid
+    // = write order); restore it so timestamp ties resolve the same way
+    // across formats — the JSON reader preserves file order, and a
+    // type-grouped order once put `label` before `open issue` in every
+    // same-second trace of a real log.
+    let event_order = master_order(conn, "event")?;
+    events.sort_by_key(|e| {
+        event_order
+            .get(e.id.as_str())
+            .copied()
+            .unwrap_or(usize::MAX)
+    });
+    let object_order = master_order(conn, "object")?;
+    objects.sort_by_key(|o| {
+        object_order
+            .get(o.id.as_str())
+            .copied()
+            .unwrap_or(usize::MAX)
+    });
+
     attach_e2o(conn, &mut events)?;
     attach_o2o(conn, &mut objects)?;
 
@@ -201,6 +222,23 @@ fn attr_columns(
             name != "ocel_id" && name != "ocel_time" && !(has_changed && name == CHANGED_FIELD)
         })
         .collect())
+}
+
+/// Position of each id in a master table (`event` / `object`), in rowid
+/// order — the order the writer wrote the log in.
+fn master_order(conn: &Connection, table: &str) -> Result<BTreeMap<String, usize>, IoError> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT ocel_id FROM {} ORDER BY rowid",
+        quote_ident(table)
+    ))?;
+    let mut rows = stmt.query([])?;
+    let mut order = BTreeMap::new();
+    let mut position = 0usize;
+    while let Some(row) = rows.next()? {
+        order.entry(row.get::<_, String>(0)?).or_insert(position);
+        position += 1;
+    }
+    Ok(order)
 }
 
 fn read_type_map(conn: &Connection, table: &str) -> Result<Vec<(String, String)>, IoError> {
