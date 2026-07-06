@@ -236,3 +236,62 @@ fn official_sqlite_round_trips_if_present() {
     assert_eq!(a, b);
     let _ = std::fs::remove_file(&path2);
 }
+
+/// Non-ASCII type names (and names that sanitize to the same suffix) must
+/// keep distinct per-type tables — found importing a Japanese workflow CSV
+/// where 申請 / 承認 / 支払 all collapsed to a colliding empty suffix.
+#[test]
+fn unicode_and_colliding_type_names_round_trip() {
+    let bare_event = |id: &str, event_type: &str| Event {
+        id: id.into(),
+        event_type: event_type.into(),
+        time: ts(1_000),
+        attributes: vec![],
+        relationships: vec![],
+    };
+    let model = Ocel {
+        event_types: vec![
+            EventType {
+                name: "申請".into(),
+                attributes: vec![],
+            },
+            EventType {
+                name: "承認".into(),
+                attributes: vec![],
+            },
+            EventType {
+                name: "type!".into(),
+                attributes: vec![],
+            },
+            EventType {
+                name: "type?".into(),
+                attributes: vec![],
+            },
+        ],
+        object_types: vec![ObjectType {
+            name: "申請書".into(),
+            attributes: vec![],
+        }],
+        events: vec![
+            bare_event("e1", "申請"),
+            bare_event("e2", "承認"),
+            bare_event("e3", "type!"),
+            bare_event("e4", "type?"),
+        ],
+        objects: vec![Object {
+            id: "k1".into(),
+            object_type: "申請書".into(),
+            attributes: vec![],
+            relationships: vec![],
+        }],
+    };
+
+    let path = tmp("ocel-rs-sqlite-unicode-types.db");
+    sqlite::write_path(&model, &path).unwrap();
+    let back = sqlite::read_path(&path).unwrap();
+    assert_eq!(back.events.len(), 4);
+    let types: Vec<&str> = back.events.iter().map(|e| e.event_type.as_str()).collect();
+    assert_eq!(types, vec!["申請", "承認", "type!", "type?"]);
+    assert_eq!(back.objects[0].object_type, "申請書");
+    let _ = std::fs::remove_file(&path);
+}

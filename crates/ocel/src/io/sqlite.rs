@@ -33,8 +33,22 @@ fn quote_ident(name: &str) -> String {
     format!("\"{}\"", name.replace('"', "\"\""))
 }
 
-fn sanitize_suffix(name: &str) -> String {
-    name.chars().filter(char::is_ascii_alphanumeric).collect()
+/// Table suffix for a type name: alphanumerics survive (identifiers are
+/// quoted, so Unicode is fine — readers resolve tables through the map
+/// tables anyway), everything else is dropped. `used` de-duplicates: names
+/// that sanitize to nothing (e.g. all-symbol) or to an already-taken suffix
+/// get a numeric disambiguator, so 申請 / 承認 / "type!" / "type?" all keep
+/// distinct tables.
+fn sanitize_suffix(name: &str, used: &mut std::collections::BTreeSet<String>) -> String {
+    let base: String = name.chars().filter(|c| c.is_alphanumeric()).collect();
+    let mut candidate = base.clone();
+    let mut n = 1usize;
+    while candidate.is_empty() || used.contains(&candidate) {
+        n += 1;
+        candidate = format!("{base}{n}");
+    }
+    used.insert(candidate.clone());
+    candidate
 }
 
 fn parse_time(s: &str) -> Result<DateTime<Utc>, IoError> {
@@ -448,8 +462,9 @@ fn write_connection(conn: &mut Connection, ocel: &Ocel) -> Result<(), IoError> {
 
 fn write_event_types(conn: &Connection, ocel: &Ocel) -> Result<BTreeMap<String, String>, IoError> {
     let mut suffixes = BTreeMap::new();
+    let mut used = std::collections::BTreeSet::new();
     for et in &ocel.event_types {
-        let suffix = sanitize_suffix(&et.name);
+        let suffix = sanitize_suffix(&et.name, &mut used);
         conn.execute(
             "INSERT INTO \"event_map_type\" (\"ocel_type\", \"ocel_type_map\") VALUES (?, ?)",
             (&et.name, &suffix),
@@ -470,8 +485,9 @@ fn write_event_types(conn: &Connection, ocel: &Ocel) -> Result<BTreeMap<String, 
 
 fn write_object_types(conn: &Connection, ocel: &Ocel) -> Result<BTreeMap<String, String>, IoError> {
     let mut suffixes = BTreeMap::new();
+    let mut used = std::collections::BTreeSet::new();
     for ot in &ocel.object_types {
-        let suffix = sanitize_suffix(&ot.name);
+        let suffix = sanitize_suffix(&ot.name, &mut used);
         conn.execute(
             "INSERT INTO \"object_map_type\" (\"ocel_type\", \"ocel_type_map\") VALUES (?, ?)",
             (&ot.name, &suffix),
