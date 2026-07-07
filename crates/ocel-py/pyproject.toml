@@ -11,10 +11,15 @@ license = { text = "MIT" }
 keywords = ["ocel", "process-mining", "event-log", "object-centric"]
 classifiers = [
     "Programming Language :: Rust",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
     "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dynamic = ["version"]
+
+[project.urls]
+Repository = "https://github.com/katsut/ocel-rs"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]

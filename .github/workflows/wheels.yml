@@ -1,0 +1,89 @@
+name: Wheels
+
+# Builds abi3-py311 wheels for the `ocel` Python package (crates/ocel-py).
+# - workflow_dispatch: dry run — build wheels + sdist as artifacts only.
+# - tag push `ocel-py-v*`: build and publish to PyPI via trusted publishing.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["ocel-py-v*"]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  build:
+    name: Wheel (${{ matrix.platform.name }})
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: macos-arm64
+            runner: macos-14
+            target: aarch64-apple-darwin
+          - name: macos-x86_64
+            runner: macos-13
+            target: x86_64-apple-darwin
+          - name: linux-x86_64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          # abi3-py311: one wheel per platform covers CPython >= 3.11
+          args: --release --manifest-path crates/ocel-py/Cargo.toml --out dist
+          manylinux: auto
+          sccache: "true"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.platform.name }}
+          path: dist
+
+  sdist:
+    name: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --manifest-path crates/ocel-py/Cargo.toml --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist
+
+  publish:
+    name: Publish to PyPI
+    # Publish only on `ocel-py-v*` tag pushes; workflow_dispatch stops at artifacts.
+    if: startsWith(github.ref, 'refs/tags/ocel-py-v')
+    needs: [build, sdist]
+    runs-on: ubuntu-latest
+    # Trusted publishing (OIDC, no API token). Before pushing the first
+    # ocel-py-v* tag, the owner must add a *pending publisher* on PyPI:
+    # https://pypi.org/manage/account/publishing/ with
+    #   project name: ocel, owner: katsut, repository: ocel-rs,
+    #   workflow: wheels.yml, environment: pypi
+    # and create the `pypi` environment in this repo's GitHub settings.
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
